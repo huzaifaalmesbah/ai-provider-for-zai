@@ -97,69 +97,6 @@ class ZAIModelMetadataDirectory extends AbstractOpenAiCompatibleModelMetadataDir
                 $modelsData
             )
         );
-
-        usort($models, [$this, 'modelSortCallback']);
-
         return $models;
-    }
-
-    /**
-     * Callback function for sorting models by ID, to be used with `usort()`.
-     *
-     * Prefers higher version numbers (glm-5 > glm-4.7 > glm-4.6) and
-     * non-turbo/air variants are listed after the base model.
-     *
-     * @since 1.0.0
-     *
-     * @param ModelMetadata $a First model.
-     * @param ModelMetadata $b Second model.
-     * @return int Comparison result.
-     */
-    protected function modelSortCallback(ModelMetadata $a, ModelMetadata $b): int
-    {
-        $aId = $a->getId();
-        $bId = $b->getId();
-
-        // Extract version numbers for comparison (e.g. glm-4.5 → 4.5, glm-5 → 5.0).
-        $aVersion = $this->extractVersion($aId);
-        $bVersion = $this->extractVersion($bId);
-
-        if ($aVersion !== $bVersion) {
-            // Higher version first.
-            return $bVersion <=> $aVersion;
-        }
-
-        // Same version: prefer base model over variants (turbo, air, flash, etc.).
-        $aIsVariant = preg_match('/-(?:turbo|air|flash|plus|lite)$/', $aId);
-        $bIsVariant = preg_match('/-(?:turbo|air|flash|plus|lite)$/', $bId);
-
-        if ($aIsVariant && !$bIsVariant) {
-            return 1;
-        }
-        if ($bIsVariant && !$aIsVariant) {
-            return -1;
-        }
-
-        // Fallback: Sort alphabetically.
-        return strcmp($aId, $bId);
-    }
-
-    /**
-     * Extracts a float version number from a model ID string.
-     *
-     * Examples: glm-4.5 → 4.5, glm-5 → 5.0, glm-4.5-air → 4.5.
-     *
-     * @since 1.0.0
-     *
-     * @param string $modelId The model ID.
-     * @return float The version number.
-     */
-    private function extractVersion(string $modelId): float
-    {
-        if (preg_match('/glm-([\d]+(?:\.[\d]+)?)/', $modelId, $matches)) {
-            return (float) $matches[1];
-        }
-
-        return 0.0;
     }
 }
