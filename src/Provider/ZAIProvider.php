@@ -17,6 +17,7 @@ use WordPress\AiClient\Providers\Models\Contracts\ModelInterface;
 use WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
 use Huzaifa\AiProviderForZAI\Metadata\ZAIModelMetadataDirectory;
 use Huzaifa\AiProviderForZAI\Models\ZAITextGenerationModel;
+use Huzaifa\AiProviderForZAI\Settings\AdminPage;
 
 /**
  * Class for AI Provider for Z.AI.
@@ -28,22 +29,19 @@ use Huzaifa\AiProviderForZAI\Models\ZAITextGenerationModel;
 class ZAIProvider extends AbstractApiProvider
 {
     /**
-     * Fallback base URL for the Z.AI API.
-     *
-     * Used if the primary coding endpoint is unavailable.
-     *
-     * @since 1.0.0
-     */
-    public const FALLBACK_BASE_URL = 'https://api.z.ai/api/paas/v4';
-
-    /**
      * {@inheritDoc}
      *
      * @since 1.0.0
      */
     protected static function baseUrl(): string
     {
-        return 'https://api.z.ai/api/coding/paas/v4';
+        $api_type = get_option(AdminPage::OPTION_API_TYPE, 'general');
+
+        if ('coding' === $api_type) {
+            return 'https://api.z.ai/api/coding/paas/v4';
+        }
+
+        return 'https://api.z.ai/api/paas/v4';
     }
 
     /**
@@ -91,9 +89,9 @@ class ZAIProvider extends AbstractApiProvider
         // Provider description support was added in 1.2.0.
         if (defined(AiClient::class . '::VERSION') && version_compare(AiClient::VERSION, '1.2.0', '>=')) {
             if (function_exists('__')) {
-                $providerMetadataArgs[] = __('Text generation with Z.AI GLM models.', 'ai-provider-for-zai');
+                $providerMetadataArgs[] = __('Text generation with Z.AI GLM models. Configure your API type under Settings > Z.AI.', 'ai-provider-for-zai');
             } else {
-                $providerMetadataArgs[] = 'Text generation with Z.AI GLM models.';
+                $providerMetadataArgs[] = 'Text generation with Z.AI GLM models. Configure your API type under Settings > Z.AI.';
             }
 
             // Provider logo support was added in 1.3.0.

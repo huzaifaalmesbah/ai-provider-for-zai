@@ -21,6 +21,7 @@ namespace Huzaifa\AiProviderForZAI;
 
 use WordPress\AiClient\AiClient;
 use Huzaifa\AiProviderForZAI\Provider\ZAIProvider;
+use Huzaifa\AiProviderForZAI\Settings\AdminPage;
 
 if (!defined('ABSPATH')) {
     return;
@@ -51,3 +52,17 @@ function register_provider(): void
 }
 
 add_action('init', __NAMESPACE__ . '\\register_provider', 5);
+
+/**
+ * Register the admin settings page.
+ *
+ * @since 1.0.0
+ *
+ * @return void
+ */
+function register_admin_page(): void
+{
+    AdminPage::register();
+}
+
+add_action('init', __NAMESPACE__ . '\\register_admin_page');
