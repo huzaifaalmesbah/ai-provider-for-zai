@@ -35,13 +35,7 @@ class ZAIProvider extends AbstractApiProvider
      */
     protected static function baseUrl(): string
     {
-        $api_type = get_option(AdminPage::OPTION_API_TYPE, 'general');
-
-        if ('coding' === $api_type) {
-            return 'https://api.z.ai/api/coding/paas/v4';
-        }
-
-        return 'https://api.z.ai/api/paas/v4';
+        return AdminPage::getBaseUrl();
     }
 
     /**
@@ -89,9 +83,9 @@ class ZAIProvider extends AbstractApiProvider
         // Provider description support was added in 1.2.0.
         if (defined(AiClient::class . '::VERSION') && version_compare(AiClient::VERSION, '1.2.0', '>=')) {
             if (function_exists('__')) {
-                $providerMetadataArgs[] = __('Text generation with Z.AI GLM models. Configure your API type under Settings > Z.AI.', 'ai-provider-for-zai');
+                $providerMetadataArgs[] = __('Text generation with Z.AI GLM models. The API type is auto-detected from your API key.', 'ai-provider-for-zai');
             } else {
-                $providerMetadataArgs[] = 'Text generation with Z.AI GLM models. Configure your API type under Settings > Z.AI.';
+                $providerMetadataArgs[] = 'Text generation with Z.AI GLM models. The API type is auto-detected from your API key.';
             }
 
             // Provider logo support was added in 1.3.0.

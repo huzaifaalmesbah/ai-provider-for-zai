@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Huzaifa\AiProviderForZAI\Models;
 
 use WordPress\AiClient\Providers\Http\DTO\Request;
+use WordPress\AiClient\Providers\Http\DTO\RequestOptions;
 use WordPress\AiClient\Providers\Http\Enums\HttpMethodEnum;
 use WordPress\AiClient\Providers\OpenAiCompatibleImplementation\AbstractOpenAiCompatibleTextGenerationModel;
 use Huzaifa\AiProviderForZAI\Provider\ZAIProvider;
@@ -29,12 +30,15 @@ class ZAITextGenerationModel extends AbstractOpenAiCompatibleTextGenerationModel
         array $headers = [],
         $data = null
     ): Request {
+        $options = $this->getRequestOptions() ?? new RequestOptions();
+        $options->setTimeout(120);
+
         return new Request(
             $method,
             ZAIProvider::url($path),
             $headers,
             $data,
-            $this->getRequestOptions()
+            $options
         );
     }
 }

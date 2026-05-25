@@ -24,7 +24,7 @@ use Huzaifa\AiProviderForZAI\Provider\ZAIProvider;
 use Huzaifa\AiProviderForZAI\Settings\AdminPage;
 
 if (!defined('ABSPATH')) {
-    return;
+    exit;
 }
 
 require_once __DIR__ . '/src/autoload.php';
@@ -53,16 +53,6 @@ function register_provider(): void
 
 add_action('init', __NAMESPACE__ . '\\register_provider', 5);
 
-/**
- * Register the admin settings page.
- *
- * @since 1.0.0
- *
- * @return void
- */
-function register_admin_page(): void
-{
-    AdminPage::register();
-}
-
-add_action('init', __NAMESPACE__ . '\\register_admin_page');
+// Auto-detect API type when the API key is saved from the Connectors page.
+add_action('update_option_connectors_ai_zai_api_key', [AdminPage::class, 'onApiKeyUpdate'], 10, 2);
+add_action('add_option_connectors_ai_zai_api_key', [AdminPage::class, 'onApiKeyAdd'], 10, 2);

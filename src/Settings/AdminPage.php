@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Registers and renders the Settings > Z.AI admin page.
+ * Handles auto-detection of the Z.AI API type based on the API key.
  *
  * @since 1.0.0
  *
@@ -18,135 +18,120 @@ if (!defined('ABSPATH')) {
 class AdminPage
 {
     public const OPTION_API_TYPE = 'zai_api_type';
-    public const OPTION_GROUP    = 'zai_settings';
-    public const PAGE_SLUG       = 'zai-settings';
 
     /**
-     * Register hooks for the admin page.
+     * Available API types and their base URLs.
      *
      * @since 1.0.0
      *
-     * @return void
+     * @var array<string, array{label: string, url: string}>
      */
-    public static function register(): void
+    public const API_TYPES = [
+        'general' => [
+            'label' => 'General API',
+            'url'   => 'https://api.z.ai/api/paas/v4',
+        ],
+        'coding' => [
+            'label' => 'Coding API',
+            'url'   => 'https://api.z.ai/api/coding/paas/v4',
+        ],
+    ];
+
+    /**
+     * Returns the base URL for the selected API type.
+     *
+     * @since 1.0.0
+     *
+     * @return string The base URL for the API.
+     */
+    public static function getBaseUrl(): string
     {
-        add_action('admin_menu', [self::class, 'add_menu_page']);
-        add_action('admin_init', [self::class, 'register_settings']);
+        $type = get_option(self::OPTION_API_TYPE, 'general');
+
+        if (isset(self::API_TYPES[$type])) {
+            return self::API_TYPES[$type]['url'];
+        }
+
+        return self::API_TYPES['general']['url'];
     }
 
     /**
-     * Add the submenu page under Settings.
+     * Detects the correct API type for a given API key by testing each endpoint.
      *
      * @since 1.0.0
      *
-     * @return void
+     * @param string $api_key The API key to test.
+     * @return string|null The detected API type key, or null if none matched.
      */
-    public static function add_menu_page(): void
+    public static function detectApiType(string $api_key): ?string
     {
-        add_options_page(
-            __('Z.AI', 'ai-provider-for-zai'),
-            __('Z.AI', 'ai-provider-for-zai'),
-            'manage_options',
-            self::PAGE_SLUG,
-            [self::class, 'render_page']
-        );
+        foreach (self::API_TYPES as $typeKey => $type) {
+            $response = wp_remote_post(
+                $type['url'] . '/chat/completions',
+                [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $api_key,
+                        'Content-Type'  => 'application/json',
+                    ],
+                    'body'    => wp_json_encode([
+                        'model'      => 'glm-4.5',
+                        'messages'   => [['role' => 'user', 'content' => 'hi']],
+                        'max_tokens' => 1,
+                    ]),
+                    'timeout' => 15,
+                ]
+            );
+
+            if (is_wp_error($response)) {
+                continue;
+            }
+
+            $code = wp_remote_retrieve_response_code($response);
+            if (200 === $code) {
+                return $typeKey;
+            }
+        }
+
+        return null;
     }
 
     /**
-     * Register the settings and fields.
+     * Auto-detects and saves the correct API type when the API key is updated.
      *
      * @since 1.0.0
      *
+     * @param mixed $old_value The old option value.
+     * @param mixed $value     The new option value.
      * @return void
      */
-    public static function register_settings(): void
+    public static function onApiKeyUpdate($old_value, $value): void
     {
-        register_setting(
-            self::OPTION_GROUP,
-            self::OPTION_API_TYPE,
-            [
-                'type'              => 'string',
-                'default'           => 'general',
-                'sanitize_callback' => 'sanitize_text_field',
-            ]
-        );
-
-        add_settings_section(
-            'zai_api_section',
-            __('API Settings', 'ai-provider-for-zai'),
-            [self::class, 'render_section_description'],
-            self::PAGE_SLUG
-        );
-
-        add_settings_field(
-            self::OPTION_API_TYPE,
-            __('API Type', 'ai-provider-for-zai'),
-            [self::class, 'render_api_type_field'],
-            self::PAGE_SLUG,
-            'zai_api_section'
-        );
-    }
-
-    /**
-     * Render the section description.
-     *
-     * @since 1.0.0
-     *
-     * @return void
-     */
-    public static function render_section_description(): void
-    {
-        echo '<p>' . esc_html__('Select the preferred API type for the Z.AI models.', 'ai-provider-for-zai') . '</p>';
-    }
-
-    /**
-     * Render the API type dropdown field.
-     *
-     * @since 1.0.0
-     *
-     * @return void
-     */
-    public static function render_api_type_field(): void
-    {
-        $current = get_option(self::OPTION_API_TYPE, 'general');
-        ?>
-        <select name="<?php echo esc_attr(self::OPTION_API_TYPE); ?>" id="zai_api_type_select">
-            <option value="general" <?php selected($current, 'general'); ?>>
-                <?php esc_html_e('General API', 'ai-provider-for-zai'); ?>
-            </option>
-            <option value="coding" <?php selected($current, 'coding'); ?>>
-                <?php esc_html_e('Coding API', 'ai-provider-for-zai'); ?>
-            </option>
-        </select>
-        <p class="description">
-            <?php esc_html_e('Choose the endpoint type for generation. The Coding API is tailored natively for code generation, while the General API is the standard conversational endpoint.', 'ai-provider-for-zai'); ?>
-        </p>
-        <?php
-    }
-
-    /**
-     * Render the settings page.
-     *
-     * @since 1.0.0
-     *
-     * @return void
-     */
-    public static function render_page(): void
-    {
-        if (!current_user_can('manage_options')) {
+        if (!is_string($value) || '' === $value) {
             return;
         }
 
-        echo '<div class="wrap">';
-        echo '<h1>' . esc_html(get_admin_page_title()) . '</h1>';
+        if ($value === $old_value) {
+            return;
+        }
 
-        settings_errors(self::OPTION_API_TYPE);
+        $type = self::detectApiType($value);
 
-        echo '<form action="options.php" method="post">';
-        settings_fields(self::OPTION_GROUP);
-        do_settings_sections(self::PAGE_SLUG);
-        submit_button();
-        echo '</form>';
-        echo '</div>';
+        if ($type !== null) {
+            update_option(self::OPTION_API_TYPE, $type);
+        }
+    }
+
+    /**
+     * Handles auto-detection when the API key option is first created.
+     *
+     * @since 1.0.0
+     *
+     * @param string $option The option name (unused).
+     * @param mixed  $value  The new option value.
+     * @return void
+     */
+    public static function onApiKeyAdd($option, $value): void
+    {
+        self::onApiKeyUpdate('', $value);
     }
 }
