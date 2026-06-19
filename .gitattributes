@@ -1,0 +1,11 @@
+# Keep dev & tooling files out of `git archive` source zips
+/.git              export-ignore
+/.github           export-ignore
+/.wordpress-org    export-ignore
+/.agents           export-ignore
+/.claude           export-ignore
+.distignore        export-ignore
+.gitignore         export-ignore
+.gitattributes     export-ignore
+skills-lock.json   export-ignore
+.DS_Store          export-ignore

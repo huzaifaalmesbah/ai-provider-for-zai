@@ -1,0 +1,15 @@
+# Directories
+/.git
+/.github
+/.wordpress-org
+/.agents
+/.claude
+
+# Dev & tooling files
+.distignore
+.gitignore
+.gitattributes
+skills-lock.json
+
+# OS files
+.DS_Store
