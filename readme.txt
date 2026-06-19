@@ -35,7 +35,7 @@ Available models are dynamically discovered from the Z.AI API.
 1. Ensure the WP AI Client plugin is installed and activated
 2. Upload the plugin files to `/wp-content/plugins/ai-provider-for-zai/`
 3. Activate the plugin through the 'Plugins' menu in WordPress
-4. Go to Settings > AI Credentials and enter your Z.AI API key
+4. Open the WP AI Client credentials screen (the AI Credentials / "Connectors" settings provided by the WP AI Client plugin) and enter your Z.AI API key. The correct API type is auto-detected from the key.
 
 == Screenshots ==
 
@@ -78,10 +78,14 @@ This plugin connects to the Z.AI API to provide AI-powered text generation capab
 = What data is sent and when =
 
 * **API key**: Your Z.AI API key is sent with every request for authentication.
+* **API type auto-detection**: When you save or change your API key, the plugin sends one minimal test request (a one-word prompt) to each Z.AI endpoint to determine which API type your key belongs to. This happens only at the moment the key is saved.
 * **Model listing**: When the plugin checks provider availability or lists available models, it sends a request to the Z.AI API to retrieve the current list of GLM models.
 * **Text generation prompts**: When your site uses the plugin to generate text, the prompt text (and any system instructions and conversation history) is sent to the Z.AI API for processing.
 
-All communication is sent to: [https://api.z.ai/api/coding/paas/v4](https://api.z.ai/api/coding/paas/v4)
+Communication is sent to the Z.AI API at one or both of the following base URLs (the API-type auto-detection contacts both; all other requests use the detected one):
+
+* General API: [https://api.z.ai/api/paas/v4](https://api.z.ai/api/paas/v4)
+* Coding API: [https://api.z.ai/api/coding/paas/v4](https://api.z.ai/api/coding/paas/v4)
 
 Data is only sent when the plugin is actively used to generate text or when checking model availability. No data is sent passively or in the background.
 
